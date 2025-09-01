@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ログイン | ワークショップ予約管理</title>
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#0b1224; --muted:#1f2937; --text:#e5e7eb; --accent:#22c55e; --danger:#ef4444; --brand:#60a5fa;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1224 0%,#0f172a 100%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans JP",sans-serif;}
+
+    .wrap{min-height:100%;display:grid;place-items:center;padding:24px}
+    .card{width:min(520px,100%);background:var(--panel);border:1px solid #233047;border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    h1{margin:0 0 8px 0;font-size:22px}
+    p.muted{margin:0 0 16px 0;color:#9aa7bd}
+
+    label{display:block;font-size:12px;color:#94a3b8;margin:10px 0 6px}
+    input{width:100%;background:#0b1224;color:var(--text);border:1px solid #233047;border-radius:12px;padding:12px}
+
+    .row{display:flex;gap:10px;align-items:center}
+    .actions{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap}
+
+    button{background:linear-gradient(180deg,#1f2937,#111827);color:var(--text);border:1px solid #243244;border-radius:12px;padding:12px 14px;cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a}
+    button.ghost{background:transparent}
+    button:disabled{opacity:.6;cursor:not-allowed}
+
+    .error{margin-top:10px;color:#fecaca;background:#2a0f10;border:1px solid #3a1b1b;border-radius:12px;padding:10px;display:none}
+    .success{margin-top:10px;color:#bbf7d0;background:#0f2318;border:1px solid #14301f;border-radius:12px;padding:10px;display:none}
+
+    footer{opacity:.7;text-align:center;font-size:12px;margin-top:16px}
+    a{color:var(--brand);text-decoration:none}
+    a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>管理者ログイン</h1>
+      <p class="muted">メールアドレスとパスワードを入力してログインしてください。</p>
+
+      <label for="email">メールアドレス</label>
+      <input id="email" type="email" placeholder="admin@example.com" autocomplete="username" />
+
+      <label for="password">パスワード</label>
+      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+
+      <div class="actions">
+        <div class="row">
+          <button id="loginBtn" class="primary">ログイン</button>
+          <button id="logoutBtn" class="ghost" style="display:none">ログアウト</button>
+        </div>
+        <div class="row" style="gap:14px">
+          <a href="#" id="resetLink">パスワードをお忘れですか？</a>
+          <a id="backLink" href="index.html">管理画面へ戻る</a>
+        </div>
+      </div>
+
+      <div id="errorBox" class="error"></div>
+      <div id="successBox" class="success"></div>
+
+      <footer>承認済みドメインに <code>*.github.io</code> を追加してください。ログイン後、自動で管理画面に遷移します。</footer>
+    </div>
+  </div>
+
+  <script type="module">
+    // ===== 0) Firebase 設定を入力（index.html と同じ値） =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyDAn5ARfnk1Zn-5nsIg7U9exCKirZwBS_E",
+      authDomain: "workshopdcpt2025.firebaseapp.com",
+      projectId: "workshopdcpt2025",
+      storageBucket: "workshopdcpt2025.firebasestorage.app",
+      messagingSenderId: "201459264888",
+      appId: "1:201459264888:web:1e90c3974bec664b302c8d",
+      measurementId: "G-FDQ4REQ1QB"
+    };
+
+    // ===== 1) SDK 読み込み =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    setPersistence(auth, browserLocalPersistence);
+
+    const $ = (s)=>document.querySelector(s);
+    const errorBox = $('#errorBox');
+    const successBox = $('#successBox');
+    const loginBtn = $('#loginBtn');
+    const logoutBtn = $('#logoutBtn');
+
+    const params = new URLSearchParams(location.search);
+    const redirectTo = params.get('redirect') || params.get('to') || 'index.html#admin';
+
+    const showError = (msg)=>{ errorBox.textContent = msg; errorBox.style.display='block'; successBox.style.display='none'; };
+    const showSuccess = (msg)=>{ successBox.textContent = msg; successBox.style.display='block'; errorBox.style.display='none'; };
+
+    onAuthStateChanged(auth, (user)=>{
+      if(user){
+        // すでにログイン済み → 管理画面へ
+        logoutBtn.style.display = 'inline-flex';
+        loginBtn.textContent = 'ログイン済み';
+        loginBtn.disabled = true;
+        // 即時遷移（1秒だけ表示してからでもOK）
+        setTimeout(()=>{ location.href = redirectTo; }, 300);
+      } else {
+        logoutBtn.style.display = 'none';
+        loginBtn.textContent = 'ログイン';
+        loginBtn.disabled = false;
+      }
+    });
+
+    loginBtn.addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      const pass = $('#password').value;
+      if(!email || !pass){ showError('メールアドレスとパスワードを入力してください'); return; }
+      loginBtn.disabled = true;
+      loginBtn.textContent = '認証中…';
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+        showSuccess('ログイン成功。画面を切り替えています…');
+        location.href = redirectTo;
+      }catch(err){
+        console.error(err);
+        let msg = 'ログインに失敗しました。';
+        if(err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') msg = '認証情報が正しくありません。';
+        if(err.code === 'auth/user-not-found') msg = 'ユーザーが存在しません。管理者に確認してください。';
+        if(err.code === 'auth/too-many-requests') msg = '試行回数が多すぎます。しばらく待ってから再度お試しください。';
+        showError(msg + `\n(${err.code})`);
+      }finally{
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'ログイン';
+      }
+    });
+
+    logoutBtn.addEventListener('click', async ()=>{
+      try{ await signOut(auth); showSuccess('ログアウトしました。'); }
+      catch(e){ showError('ログアウトに失敗しました。'); }
+    });
+
+    $('#resetLink').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const email = ($('#email').value || '').trim();
+      if(!email){ showError('パスワード再設定にはメールアドレスを入力してください。'); return; }
+      try{
+        await sendPasswordResetEmail(auth, email);
+        showSuccess('パスワード再設定メールを送信しました。受信トレイをご確認ください。');
+      }catch(err){
+        showError('メール送信に失敗しました。(' + err.code + ')');
+      }
+    });
+  </script>
+</body>
+</html>
