@@ -79,17 +79,20 @@
     body.signage header{display:none}
     body.signage .container{max-width:1400px;padding:16px}
     body.signage .signage-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0 16px 0}
-    body.signage .signage-title{font-size:24px;font-weight:800}
+    body.signage .signage-title{font-size:44px;font-weight:900;letter-spacing:.02em}
     .signage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
     @media (max-width:1200px){.signage-grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:740px){.signage-grid{grid-template-columns:1fr}}
-    .signage-card{background:linear-gradient(180deg,#0a0f1e,#0e162c);border:1px solid #1f2a40;border-radius:18px;padding:14px;display:grid;gap:8px}
-    .signage-card .name{font-weight:800;font-size:18px}
-    .signage-card .when{color:#a6b2c7}
+    .signage-card{background:linear-gradient(180deg,#0a0f1e,#0e162c);border:2px solid #94a3b8;border-radius:18px;padding:18px;display:grid;gap:10px}
+    .signage-card .name{font-weight:900;font-size:24px}
+    .signage-card .when{color:#a6b2c7;font-size:18px}
     .signage-card .remain{font-weight:700}
-    .signage-card.full{outline:2px solid var(--danger)}
+    .signage-card.full{border-color: var(--danger)}
     .signage-card .progress{height:14px}
     .clock{font-weight:700;color:#a6b2c7}
+    /* signage status */
+    .signage-card.ok{border-color: var(--accent)}
+    .signage-card .status{font-weight:900;font-size:32px}
 
     footer{opacity:.6;font-size:12px;text-align:center;padding:20px}
   </style>
@@ -147,7 +150,7 @@
     <!-- SIGNAGE SECTION -->
     <section id="signageSection" class="panel" style="display:none">
       <div class="signage-head">
-        <div class="signage-title">開始前のワークショップ空き状況</div>
+        <div class="signage-title">ワークショップ空き状況</div>
         <div class="clock" id="clock">--:--</div>
       </div>
       <div id="signageGrid" class="signage-grid"></div>
@@ -431,6 +434,27 @@
       });
       sorted.forEach(w => {
         const left = Math.max(0, Number(w.capacity) - Number(w.attendeeCount||0));
+        const isFull = left === 0;
+        const statusText = isFull ? '×満員' : '〇空きあり';
+        const card = document.createElement('div');
+        card.className = 'signage-card' + (isFull ? ' full' : ' ok');
+        card.innerHTML = `
+          <div class="name">${w.name}</div>
+          <div class="when">🕒 ${fmtWhen(w.startAt)}</div>
+          <div class="status">${statusText}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+      // 近い順に、満席は最後に寄せる
+      const sorted = items.slice().sort((a,b)=>{
+        const aFull = (a.attendeeCount||0) >= a.capacity;
+        const bFull = (b.attendeeCount||0) >= b.capacity;
+        if (aFull !== bFull) return aFull ? 1 : -1; // 満席は後ろ
+        return (a.startAt?.toMillis?.()||new Date(a.startAt).getTime()) - (b.startAt?.toMillis?.()||new Date(b.startAt).getTime());
+      });
+      sorted.forEach(w => {
+        const left = Math.max(0, Number(w.capacity) - Number(w.attendeeCount||0));
         const rate = Math.min(100, Math.round((Number(w.attendeeCount||0) / Number(w.capacity)) * 100));
         const card = document.createElement('div');
         card.className = 'signage-card' + (left===0 ? ' full' : '');
@@ -458,3 +482,4 @@
   </script>
 </body>
 </html>
+
