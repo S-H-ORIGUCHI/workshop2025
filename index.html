@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ワークショップ予約管理</title>
+  <style>
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --panel:#111827;       /* gray-900 */
+      --muted:#1f2937;       /* gray-800 */
+      --text:#e5e7eb;        /* gray-200 */
+      --accent:#22c55e;      /* green-500 */
+      --danger:#ef4444;      /* red-500 */
+      --warn:#f59e0b;        /* amber-500 */
+      --brand:#60a5fa;       /* blue-400 */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1224 0%,#0f172a 100%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans JP",sans-serif;}
+    a{color:var(--brand);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    header{
+      position:sticky;top:0;z-index:10;
+      display:flex;align-items:center;gap:16px;justify-content:space-between;
+      padding:12px 16px;background:rgba(17,24,39,.85);backdrop-filter:blur(8px);
+      border-bottom:1px solid #1f2937;
+    }
+    header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.02em}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#0b1224;border:1px solid #1f2937;padding:6px 10px;border-radius:999px}
+    .muted{opacity:.85}
+
+    .container{max-width:1100px;margin:18px auto;padding:0 16px}
+    .panel{background:var(--panel);border:1px solid #1f2937;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .grid{display:grid;gap:12px}
+    .grid-2{grid-template-columns:repeat(2,1fr)}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:900px){.grid-3{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+    input,button,select{font:inherit}
+    input,select{
+      width:100%;background:#0b1224;color:var(--text);border:1px solid #233047;border-radius:12px;padding:10px 12px;
+    }
+    label{font-size:12px;color:#94a3b8}
+    .row{display:grid;gap:8px}
+    .row-2{grid-template-columns:2fr 1fr}
+    .row-3{grid-template-columns:1.4fr 1fr 1fr}
+    .row-4{grid-template-columns:1.4fr 1fr 1fr 1fr}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    button{
+      background:linear-gradient(180deg,#1f2937,#111827);color:var(--text);border:1px solid #243244;border-radius:12px;padding:10px 12px;cursor:pointer;
+    }
+    button.ghost{background:transparent}
+    button.primary{background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a}
+    button.warn{background:linear-gradient(180deg,#f59e0b,#d97706);border-color:#b45309}
+    button.danger{background:linear-gradient(180deg,#ef4444,#dc2626);border-color:#991b1b}
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .workshop-item{border:1px solid #233047;border-radius:14px;padding:12px;display:grid;gap:10px;background:#0b1224}
+    .workshop-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .title{font-weight:700}
+    .meta{font-size:12px;color:#9aa7bd;display:flex;gap:10px;flex-wrap:wrap}
+    .progress{height:10px;background:#0b1326;border:1px solid #1f2a40;border-radius:999px;overflow:hidden}
+    .progress > div{height:100%;background:linear-gradient(90deg,#60a5fa,#22c55e)}
+    .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #233047;background:#0b1224}
+    .badge.full{border-color:#3a1b1b;background:#2a0f10;color:#fecaca}
+    .badge.ok{border-color:#14301f;background:#0f2318;color:#bbf7d0}
+
+    /* PARTICIPANTS */
+    details.part{border-top:1px dashed #263347;padding-top:8px}
+    details.part summary{cursor:pointer;list-style:none}
+    details.part summary::-webkit-details-marker{display:none}
+    .participants{display:grid;gap:8px;margin-top:8px}
+    .participant{display:flex;align-items:center;justify-content:space-between;background:#0f1426;border:1px solid #25324a;border-radius:10px;padding:8px 10px}
+
+    /* SIGNAGE MODE */
+    body.signage header{display:none}
+    body.signage .container{max-width:1400px;padding:16px}
+    body.signage .signage-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0 16px 0}
+    body.signage .signage-title{font-size:24px;font-weight:800}
+    .signage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    @media (max-width:1200px){.signage-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:740px){.signage-grid{grid-template-columns:1fr}}
+    .signage-card{background:linear-gradient(180deg,#0a0f1e,#0e162c);border:1px solid #1f2a40;border-radius:18px;padding:14px;display:grid;gap:8px}
+    .signage-card .name{font-weight:800;font-size:18px}
+    .signage-card .when{color:#a6b2c7}
+    .signage-card .remain{font-weight:700}
+    .signage-card.full{outline:2px solid var(--danger)}
+    .signage-card .progress{height:14px}
+    .clock{font-weight:700;color:#a6b2c7}
+
+    footer{opacity:.6;font-size:12px;text-align:center;padding:20px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="pill">
+      <span>📅</span>
+      <strong>ワークショップ予約管理</strong>
+      <span class="muted" id="envHint">(GitHub Pages + Firebase)</span>
+    </div>
+    <div class="actions" id="headerActions">
+      <a href="#signage" class="pill" title="デジタルサイネージを開く">🖥️ デジタルサイネージ</a>
+      <a href="#admin" class="pill" title="管理画面を開く">🛠️ 管理者モード</a>
+      <span class="pill" id="whoami">未ログイン</span>
+      <button id="btnSignOut" class="ghost" style="display:none">ログアウト</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- ADMIN SECTION -->
+    <section id="adminSection" class="panel" style="display:none">
+      <div class="grid grid-2" style="align-items:start">
+        <div class="panel" style="background:#0b1224">
+          <h2 style="margin-top:0">① ワークショップの登録</h2>
+          <div class="grid">
+            <div class="row">
+              <label for="wsName">ワークショップ名</label>
+              <input id="wsName" type="text" placeholder="例：親子プログラミング体験" />
+            </div>
+            <div class="row">
+              <label for="wsDatetime">日時</label>
+              <input id="wsDatetime" type="datetime-local" />
+            </div>
+            <div class="row">
+              <label for="wsCapacity">定員</label>
+              <input id="wsCapacity" type="number" min="1" value="10" />
+            </div>
+            <div class="actions">
+              <button id="btnAddWs" class="primary">登録する</button>
+              <button id="btnClearWs" class="ghost">クリア</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" style="background:#0b1224">
+            <h2 style="margin-top:0">② 参加者登録 / ③ 空き状況</h2>
+            <div id="wsList" class="grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SIGNAGE SECTION -->
+    <section id="signageSection" class="panel" style="display:none">
+      <div class="signage-head">
+        <div class="signage-title">開始前のワークショップ空き状況</div>
+        <div class="clock" id="clock">--:--</div>
+      </div>
+      <div id="signageGrid" class="signage-grid"></div>
+    </section>
+  </div>
+
+  <footer>
+    <span>© <span id="year"></span> Workshop Manager. Firebase Firestore でリアルタイム同期。</span>
+  </footer>
+
+  <!-- Firebase SDKs (Modular) -->
+  <script type="module">
+    // ===== 0) Firebase 設定を入力してください =====
+    // Firebase コンソール → プロジェクト設定 → マイアプリ → Webアプリ から取得した値を貼り付け
+    const firebaseConfig = {
+      apiKey: "AIzaSyDAn5ARfnk1Zn-5nsIg7U9exCKirZwBS_E",
+      authDomain: "workshopdcpt2025.firebaseapp.com",
+      projectId: "workshopdcpt2025",
+      storageBucket: "workshopdcpt2025.firebasestorage.app",
+      messagingSenderId: "201459264888",
+      appId: "1:201459264888:web:1e90c3974bec664b302c8d",
+      measurementId: "G-FDQ4REQ1QB"
+    };
+
+    // ===== 1) SDK 読み込み =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, doc, addDoc, deleteDoc, updateDoc, getDoc, getDocs, onSnapshot, query, where, orderBy, serverTimestamp, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ===== 2) 便利関数 =====
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+    const fmtWhen = (ts) => {
+      if (!ts) return "-";
+      // Firestore Timestamp or JS Date → Date
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      const f = new Intl.DateTimeFormat('ja-JP', { month:'numeric', day:'numeric', weekday:'short', hour:'2-digit', minute:'2-digit' });
+      return f.format(d);
+    };
+    const nowTs = () => new Date();
+
+    const byId = (id) => doc(db, 'workshops', id);
+    const participantsCol = (wsId) => collection(db, 'workshops', wsId, 'participants');
+
+    // ===== 3) ルーティング（#admin / #signage または ?mode=signage） =====
+    const isSignageMode = () => new URLSearchParams(location.search).get('mode') === 'signage' || location.hash === '#signage';
+    const switchView = () => {
+      const signage = isSignageMode();
+      document.body.classList.toggle('signage', signage);
+      $('#adminSection').style.display = signage ? 'none' : 'block';
+      $('#signageSection').style.display = signage ? 'block' : 'none';
+    };
+    window.addEventListener('hashchange', switchView);
+    window.addEventListener('popstate', switchView);
+
+    // Clock for signage
+    const tickClock = () => {
+      const d = new Date();
+      $('#clock').textContent = d.toLocaleString('ja-JP', { month:'numeric', day:'numeric', weekday:'short', hour:'2-digit', minute:'2-digit' });
+    };
+    setInterval(tickClock, 1000); tickClock();
+    $('#year').textContent = new Date().getFullYear();
+
+    // ===== 4) 認証（Email/Password） =====
+    const whoami = $('#whoami');
+    const btnSignOut = $('#btnSignOut');
+
+    function renderLoginPanel(){
+      const container = document.createElement('div');
+      container.className = 'panel';
+      container.style.background = '#0b1224';
+      container.innerHTML = `
+        <h2 style="margin-top:0">管理者ログイン</h2>
+        <div class="grid">
+          <div class="row"><label>メールアドレス</label><input type="email" id="loginEmail" placeholder="admin@example.com"></div>
+          <div class="row"><label>パスワード</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+          <div class="actions"><button id="btnLogin" class="primary">ログイン</button></div>
+          <p class="muted">※ 書き込みはログインしたユーザーのみ可能。サイネージ表示はログイン不要です。</p>
+        </div>`;
+      const adminSection = $('#adminSection');
+      adminSection.innerHTML = '';
+      adminSection.appendChild(container);
+      $('#btnLogin').onclick = async () => {
+        const email = $('#loginEmail').value.trim();
+        const pass = $('#loginPass').value;
+        try{ await signInWithEmailAndPassword(auth, email, pass); }
+        catch(err){ alert('ログインに失敗しました：'+ err.message); }
+      };
+    }
+
+    function renderAdminPanel(user){
+      whoami.textContent = user ? `ログイン中：${user.email}` : '未ログイン';
+      btnSignOut.style.display = user ? 'inline-flex' : 'none';
+      btnSignOut.onclick = () => signOut(auth);
+
+      const adminSection = $('#adminSection');
+      adminSection.innerHTML = `
+        <div class="grid grid-2" style="align-items:start">
+          <div class="panel" style="background:#0b1224">
+            <h2 style="margin-top:0">① ワークショップの登録</h2>
+            <div class="grid">
+              <div class="row"><label for="wsName">ワークショップ名</label><input id="wsName" type="text" placeholder="例：親子プログラミング体験" /></div>
+              <div class="row"><label for="wsDatetime">日時</label><input id="wsDatetime" type="datetime-local" /></div>
+              <div class="row"><label for="wsCapacity">定員</label><input id="wsCapacity" type="number" min="1" value="10" /></div>
+              <div class="actions"><button id="btnAddWs" class="primary">登録する</button><button id="btnClearWs" class="ghost">クリア</button></div>
+            </div>
+          </div>
+          <div>
+            <div class="panel" style="background:#0b1224">
+              <h2 style="margin-top:0">② 参加者登録 / ③ 空き状況</h2>
+              <div id="wsList" class="grid"></div>
+            </div>
+          </div>
+        </div>`;
+
+      $('#btnClearWs').onclick = () => { $('#wsName').value=''; $('#wsDatetime').value=''; $('#wsCapacity').value='10'; };
+      $('#btnAddWs').onclick = addWorkshop;
+
+      attachWorkshopList(true);
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (isSignageMode()) return; // signage では管理UIを描画しない
+      if (user) renderAdminPanel(user); else renderLoginPanel();
+    });
+
+    // ===== 5) ワークショップ登録 / 削除 / 参加者登録 =====
+    async function addWorkshop(){
+      const name = $('#wsName').value.trim();
+      const dt = $('#wsDatetime').value; // yyyy-MM-ddTHH:mm
+      const cap = parseInt($('#wsCapacity').value, 10);
+      if(!name || !dt || !cap || cap < 1){ alert('入力を確認してください'); return; }
+      const startAt = new Date(dt);
+      try{
+        await addDoc(collection(db,'workshops'), { name, startAt, capacity: cap, attendeeCount: 0, createdAt: serverTimestamp() });
+        $('#wsName').value=''; $('#wsDatetime').value=''; $('#wsCapacity').value='10';
+      }catch(err){ alert('登録に失敗しました：' + err.message); }
+    }
+
+    async function deleteWorkshop(wsId){
+      if(!confirm('このワークショップを削除しますか？参加者情報も削除されます。')) return;
+      const wRef = byId(wsId);
+      // 参加者を削除 → ワークショップ削除
+      try{
+        const partsSnap = await getDocs(participantsCol(wsId));
+        const batchDeletes = [];
+        partsSnap.forEach(docSnap => batchDeletes.push(deleteDoc(docSnap.ref)));
+        await Promise.all(batchDeletes);
+        await deleteDoc(wRef);
+      }catch(err){ alert('削除に失敗しました：'+ err.message); }
+    }
+
+    async function addParticipant(wsId, name){
+      name = (name||'').trim();
+      if(!name) { alert('参加者名を入力してください'); return; }
+      try{
+        await runTransaction(db, async (tx) => {
+          const wRef = byId(wsId);
+          const wSnap = await tx.get(wRef);
+          if(!wSnap.exists()) throw new Error('ワークショップが見つかりません');
+          const w = wSnap.data();
+          const count = Number(w.attendeeCount || 0);
+          if(count >= w.capacity) throw new Error('満席のため登録できません');
+          const pRef = doc(collection(wRef, 'participants'));
+          tx.set(pRef, { name, createdAt: serverTimestamp() });
+          tx.update(wRef, { attendeeCount: increment(1) });
+        });
+      }catch(err){ alert('参加者登録に失敗しました：'+ err.message); }
+    }
+
+    async function removeParticipant(wsId, partId){
+      try{
+        await runTransaction(db, async (tx) => {
+          const wRef = byId(wsId);
+          const pRef = doc(db, 'workshops', wsId, 'participants', partId);
+          const wSnap = await tx.get(wRef);
+          if(!wSnap.exists()) throw new Error('ワークショップが見つかりません');
+          const w = wSnap.data();
+          const count = Number(w.attendeeCount || 0);
+          if(count <= 0) throw new Error('参加者数が不正です');
+          tx.delete(pRef);
+          tx.update(wRef, { attendeeCount: increment(-1) });
+        });
+      }catch(err){ alert('参加者削除に失敗しました：'+ err.message); }
+    }
+
+    // ===== 6) リアルタイム一覧（管理用 / サイネージ用） =====
+    let unsubWs = null;
+    function attachWorkshopList(forAdmin){
+      if(unsubWs) { unsubWs(); unsubWs = null; }
+      const qWs = query(
+        collection(db,'workshops'),
+        where('startAt','>=', nowTs()),
+        orderBy('startAt','asc')
+      );
+      unsubWs = onSnapshot(qWs, (snap) => {
+        const items = [];
+        snap.forEach(docSnap => items.push({ id: docSnap.id, ...docSnap.data() }));
+        if (isSignageMode()) renderSignage(items); else renderWsAdmin(items, forAdmin);
+      });
+    }
+
+    function renderWsAdmin(items){
+      const list = $('#wsList');
+      list.innerHTML = '';
+      if(items.length === 0){
+        list.innerHTML = '<p class="muted">開始前のワークショップはありません。</p>';
+        return;
+      }
+      items.forEach(w => {
+        const left = Math.max(0, Number(w.capacity) - Number(w.attendeeCount||0));
+        const rate = Math.min(100, Math.round((Number(w.attendeeCount||0) / Number(w.capacity)) * 100));
+        const item = document.createElement('div');
+        item.className = 'workshop-item';
+        item.innerHTML = `
+          <div class="workshop-head">
+            <div>
+              <div class="title">${w.name}</div>
+              <div class="meta">🕒 ${fmtWhen(w.startAt)} ・ 定員 ${w.capacity} ・ 申込 ${w.attendeeCount||0} ・ 残 ${left}</div>
+            </div>
+            <div class="actions">
+              <button class="warn" data-del>削除</button>
+            </div>
+          </div>
+          <div class="progress"><div style="width:${rate}%"></div></div>
+          <details class="part">
+            <summary>参加者登録 / 一覧を表示</summary>
+            <div class="participants" data-part-list></div>
+            <div class="actions">
+              <input type="text" placeholder="参加者名（例：山田太郎）" data-part-name style="flex:1;min-width:220px" />
+              <button class="primary" data-part-add>参加者を追加</button>
+            </div>
+          </details>
+        `;
+        // 削除
+        item.querySelector('[data-del]').onclick = () => deleteWorkshop(w.id);
+        // 参加者追加
+        item.querySelector('[data-part-add]').onclick = () => {
+          const name = item.querySelector('[data-part-name]').value;
+          addParticipant(w.id, name);
+          item.querySelector('[data-part-name]').value = '';
+        };
+        // 参加者一覧（開いた時に購読、閉じたら解除）
+        const details = item.querySelector('details.part');
+        let unsubParts = null;
+        details.addEventListener('toggle', () => {
+          if(details.open){
+            unsubParts = onSnapshot(query(participantsCol(w.id), orderBy('createdAt','asc')), (pSnap) => {
+              const wrap = item.querySelector('[data-part-list]');
+              wrap.innerHTML = '';
+              pSnap.forEach(p => {
+                const row = document.createElement('div');
+                row.className = 'participant';
+                row.innerHTML = `<span>${(p.data().name||'')}</span><button class="danger">削除</button>`;
+                row.querySelector('button').onclick = () => removeParticipant(w.id, p.id);
+                wrap.appendChild(row);
+              });
+            });
+          }else{
+            if(unsubParts) { unsubParts(); unsubParts = null; }
+          }
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function renderSignage(items){
+      const grid = $('#signageGrid');
+      grid.innerHTML = '';
+      if(items.length === 0){ grid.innerHTML = '<p class="muted">現在、開始前のワークショップはありません。</p>'; return; }
+      // 近い順に、満席は最後に寄せる
+      const sorted = items.slice().sort((a,b)=>{
+        const aFull = (a.attendeeCount||0) >= a.capacity;
+        const bFull = (b.attendeeCount||0) >= b.capacity;
+        if (aFull !== bFull) return aFull ? 1 : -1; // 満席は後ろ
+        return (a.startAt?.toMillis?.()||new Date(a.startAt).getTime()) - (b.startAt?.toMillis?.()||new Date(b.startAt).getTime());
+      });
+      sorted.forEach(w => {
+        const left = Math.max(0, Number(w.capacity) - Number(w.attendeeCount||0));
+        const rate = Math.min(100, Math.round((Number(w.attendeeCount||0) / Number(w.capacity)) * 100));
+        const card = document.createElement('div');
+        card.className = 'signage-card' + (left===0 ? ' full' : '');
+        card.innerHTML = `
+          <div class="name">${w.name}</div>
+          <div class="when">🕒 ${fmtWhen(w.startAt)}</div>
+          <div class="progress"><div style="width:${rate}%"></div></div>
+          <div class="remain">${left===0 ? '満席' : `残 ${left} / ${w.capacity}`}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // ===== 7) 初期化 =====
+    const boot = () => {
+      switchView();
+      if (isSignageMode()) {
+        attachWorkshopList(false); // read-only view
+      } else {
+        // 認証状態に応じて描画、購読は renderAdminPanel 内で attach
+      }
+    };
+    boot();
+
+  </script>
+</body>
+</html>
